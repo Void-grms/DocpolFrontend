@@ -11,7 +11,10 @@ const handler = NextAuth({
       },
       async authorize(credentials) {
         try {
-          const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
+          const rawApiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
+          const apiUrl = rawApiUrl.replace(/\/$/, ""); // Remover slash final si existe
+          console.log("Intentando login en:", `${apiUrl}/api/auth/login`);
+          
           const res = await fetch(`${apiUrl}/api/auth/login`, {
             method: 'POST',
             body: JSON.stringify(credentials),
@@ -19,6 +22,7 @@ const handler = NextAuth({
           });
           
           const data = await res.json();
+          console.log("Respuesta del backend:", res.status, data);
           
           if (res.ok && data.user) {
             return {
@@ -26,9 +30,10 @@ const handler = NextAuth({
               apiToken: data.token,
             };
           }
+          console.log("Login fallido:", data.error || "Credenciales incorrectas");
           return null;
         } catch (e) {
-          console.error("Error en authorize:", e);
+          console.error("Error en authorize fetch:", e);
           return null;
         }
       }
