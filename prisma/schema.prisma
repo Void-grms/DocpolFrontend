@@ -1,0 +1,96 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id             String       @id @default(uuid())
+  email          String       @unique
+  passwordHash   String
+  nombreCompleto String
+  grado          String?
+  cargo          String?
+  cip            String?
+  telefono       String?
+  dependenciaId  String?
+  dependencia    Dependencia? @relation(fields: [dependenciaId], references: [id])
+  plan           String       @default("free")
+  documentos     Documento[]
+  expedientes    Expediente[]
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+}
+
+model Dependencia {
+  id         String        @id @default(uuid())
+  nombre     String
+  siglas     String
+  nivel      String
+  superiorId String?
+  superior   Dependencia?  @relation("Jerarquia", fields: [superiorId], references: [id])
+  hijos      Dependencia[] @relation("Jerarquia")
+  region     String?
+  direccion  String?
+  usuarios   User[]
+  documentos Documento[]
+}
+
+model TipoDocumento {
+  id               Int         @id
+  nombre           String
+  grupo            String
+  clasificacion    String      @default("comun")
+  camposJson       Json
+  estructuraJson   Json
+  validacionesJson Json?
+  formatoTexto     String?     @db.Text
+  activo           Boolean     @default(true)
+  documentos       Documento[]
+}
+
+model Documento {
+  id                String                @id @default(uuid())
+  userId            String
+  user              User                  @relation(fields: [userId], references: [id])
+  tipoId            Int
+  tipo              TipoDocumento         @relation(fields: [tipoId], references: [id])
+  numeroCorrelativo Int?
+  anio              Int
+  dependenciaId     String?
+  dependencia       Dependencia?          @relation(fields: [dependenciaId], references: [id])
+  estado            String                @default("borrador")
+  clasificacion     String                @default("comun")
+  datos             Json
+  contenidoHtml     String?               @db.Text
+  expedientes       ExpedienteDocumento[]
+  createdAt         DateTime              @default(now())
+  updatedAt         DateTime              @updatedAt
+}
+
+model Expediente {
+  id         String                @id @default(uuid())
+  userId     String
+  user       User                  @relation(fields: [userId], references: [id])
+  numero     String
+  asunto     String
+  estado     String                @default("abierto")
+  documentos ExpedienteDocumento[]
+  createdAt  DateTime              @default(now())
+  updatedAt  DateTime              @updatedAt
+}
+
+model ExpedienteDocumento {
+  expedienteId String
+  expediente   Expediente @relation(fields: [expedienteId], references: [id])
+  documentoId  String
+  documento    Documento  @relation(fields: [documentoId], references: [id])
+  orden        Int
+  folioInicio  Int?
+  folioFin     Int?
+
+  @@id([expedienteId, documentoId])
+}
